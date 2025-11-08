@@ -160,6 +160,11 @@
       </div>
     {/if}
   </div>
+  <div class="credits">
+    <a href="https://dizayn-design.de/" target="_blank" rel="noopener noreferrer">
+      Credits to Dizayn Design
+    </a>
+  </div>
 </div>
 
 <style>
@@ -412,5 +417,21 @@
   @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
+  }
+
+  .credits {
+    text-align: center;
+    margin-top: 2rem;
+    font-size: 0.875rem;
+    color: #9ca3af;
+  }
+
+  .credits a {
+    color: #9ca3af;
+    text-decoration: none;
+  }
+
+  .credits a:hover {
+    text-decoration: underline;
   }
 </style>
