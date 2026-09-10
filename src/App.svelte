@@ -1,78 +1,124 @@
 <script module>
   type LetterObject = {
     letter: string;
-    name: string;
+    audioFile: string;
   };
 </script>
 <script lang="ts">
+  import { t, getLetterName, setLocale, getLocale, getAvailableLocales, type Locale } from './i18n';
 
   let selectedLetter = $state<LetterObject | null>(null);
   let isPlaying = $state(false);
+  let currentAudio = $state<HTMLAudioElement | null>(null);
+  let locale = $state<Locale>(getLocale());
 
-  const letterRows = [
+  const letterRows: LetterObject[][] = [
     [
-      { letter: 'ا', name: 'alif' },
-      { letter: 'ب', name: 'baa' },
-      { letter: 'ت', name: 'taa' },
-      { letter: 'ث', name: 'thaa' }
+      { letter: 'ا', audioFile: 'elif' },
+      { letter: 'ب', audioFile: 'be' },
+      { letter: 'ت', audioFile: 'te' },
+      { letter: 'ث', audioFile: 'se' }
     ],
     [
-      { letter: 'ج', name: 'jeem' },
-      { letter: 'ح', name: 'haa' },
-      { letter: 'خ', name: 'khaa' }
+      { letter: 'ج', audioFile: 'cim' },
+      { letter: 'ح', audioFile: 'ha' },
+      { letter: 'خ', audioFile: 'kha' }
     ],
     [
-      { letter: 'د', name: 'daal' },
-      { letter: 'ذ', name: 'dhaal' },
-      { letter: 'ر', name: 'raa' },
-      { letter: 'ز', name: 'zaay' }
+      { letter: 'د', audioFile: 'dal' },
+      { letter: 'ذ', audioFile: 'zel' },
+      { letter: 'ر', audioFile: 'ra' },
+      { letter: 'ز', audioFile: 'ze' }
     ],
     [
-      { letter: 'س', name: 'seen' },
-      { letter: 'ش', name: 'sheen' },
-      { letter: 'ص', name: 'saad' },
-      { letter: 'ض', name: 'daad' }
+      { letter: 'س', audioFile: 'sin' },
+      { letter: 'ش', audioFile: 'sin_s' },
+      { letter: 'ص', audioFile: 'sad' },
+      { letter: 'ض', audioFile: 'dad' }
     ],
     [
-      { letter: 'ط', name: 'taa' },
-      { letter: 'ظ', name: 'dhaa' },
-      { letter: 'ع', name: 'ayn' },
-      { letter: 'غ', name: 'ghayn' }
+      { letter: 'ط', audioFile: 'ti' },
+      { letter: 'ظ', audioFile: 'zi' },
+      { letter: 'ع', audioFile: 'ayn' },
+      { letter: 'غ', audioFile: 'gayn' }
     ],
     [
-      { letter: 'ف', name: 'faa' },
-      { letter: 'ق', name: 'qaaf' },
-      { letter: 'ك', name: 'kaaf' },
-      { letter: 'ل', name: 'laam' },
-      { letter: 'م', name: 'meem' }
+      { letter: 'ف', audioFile: 'fe' },
+      { letter: 'ق', audioFile: 'kaf' },
+      { letter: 'ك', audioFile: 'kef' },
+      { letter: 'ل', audioFile: 'lam' },
+      { letter: 'م', audioFile: 'mim' }
     ],
     [
-      { letter: 'ن', name: 'noon' },
-      { letter: 'و', name: 'waaw' },
-      { letter: 'ه', name: 'haa' },
-      { letter: 'لا', name: 'laa' },
-      { letter: 'ي', name: 'yaa' }
+      { letter: 'ن', audioFile: 'nun' },
+      { letter: 'و', audioFile: 'vav' },
+      { letter: 'ه', audioFile: 'he' },
+      { letter: 'لا', audioFile: 'lamelif' },
+      { letter: 'ي', audioFile: 'ye' }
     ]
   ];
 
+  const flatLetters: LetterObject[] = letterRows.flat();
+
+  function getcurrentIndex(): number {
+    if (!selectedLetter) return -1;
+    const letter = selectedLetter;
+    return flatLetters.findIndex(l => l.audioFile === letter.audioFile);
+  }
+
+  function prevLetter() {
+    const idx = getcurrentIndex();
+    const prev = idx <= 0 ? flatLetters[flatLetters.length - 1] : flatLetters[idx - 1];
+    selectedLetter = prev;
+    playAudio(prev.audioFile);
+  }
+
+  function nextLetter() {
+    const idx = getcurrentIndex();
+    const next = idx >= flatLetters.length - 1 ? flatLetters[0] : flatLetters[idx + 1];
+    selectedLetter = next;
+    playAudio(next.audioFile);
+  }
+
+  function playAudio(audioFile: string) {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+    const audio = new Audio(`./audio/${audioFile}.mp3`);
+    currentAudio = audio;
+    isPlaying = true;
+    audio.play().catch(() => {});
+    audio.onended = () => {
+      isPlaying = false;
+      currentAudio = null;
+    };
+  }
+
   function handleLetterClick(letterObj: LetterObject) {
     selectedLetter = letterObj;
-    isPlaying = true;
-    setTimeout(() => {
-      isPlaying = false;
-    }, 2000);
+    playAudio(letterObj.audioFile);
   }
 
   function closeVideo() {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio = null;
+    }
     selectedLetter = null;
     isPlaying = false;
   }
 
   function playPronunciation() {
-    isPlaying = true;
-    setTimeout(() => {
-      isPlaying = false;
-    }, 2000);
+    if (selectedLetter) {
+      playAudio(selectedLetter.audioFile);
+    }
+  }
+
+  function changeLanguage(newLocale: Locale) {
+    locale = newLocale;
+    setLocale(newLocale);
   }
 
   function getButtonClass(letterObj: LetterObject) {
@@ -90,11 +136,24 @@
 
 <div class="container">
   <div class="content">
-    <h1 class="title-arabic">تعلم الحروف العربية</h1>
-    <h2 class="title-normal">Elif Ba Tâlimi</h2>
+    <div class="header-row">
+      <h1 class="title-arabic">تعلم الحروف العربية</h1>
+      <div class="language-switcher">
+        {#each getAvailableLocales() as loc}
+          <button
+            class="lang-button"
+            class:active={locale === loc.code}
+            onclick={() => changeLanguage(loc.code)}
+          >
+            {loc.label}
+          </button>
+        {/each}
+      </div>
+    </div>
+    <h2 class="title-normal">{t('title')}</h2>
     
     <div class="card">
-      <p class="instruction">Click on any letter to hear its pronunciation and see articulation</p>
+      <p class="instruction">{t('instruction')}</p>
       
       <div class="letters-grid">
         {#each letterRows as row}
@@ -113,11 +172,12 @@
     </div>
 
     {#if selectedLetter}
-      <div class="modal-backdrop">
-        <div class="modal">
+      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+      <div class="modal-backdrop" onclick={closeVideo} role="dialog" tabindex="-1">
+        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+        <div class="modal" onclick={(e) => e.stopPropagation()}>
           <div class="modal-header">
             <div class="header-content">
-              <span class="header-letter">{selectedLetter.letter}</span>
               {#if isPlaying}
                 <svg class="volume-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -125,7 +185,7 @@
                 </svg>
               {/if}
             </div>
-            <button onclick={closeVideo} class="close-button">
+            <button onclick={closeVideo} class="close-button" aria-label={t('close')}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -134,25 +194,39 @@
           </div>
           
           <div class="modal-body">
-            <div class="video-placeholder">
-              <div class="video-content">
-                <div class="big-letter">{selectedLetter.letter}</div>
-                <p class="video-text">Articulation demonstration</p>
-              </div>
-            </div>
-            
-            <div class="info-section">
-              <div class="letter-info">
-                <span class="info-label">Letter Name:</span>
-                <span class="info-value">{selectedLetter.name}</span>
-              </div>
-              
-              <button onclick={playPronunciation} class="play-button">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <div class="nav-wrapper">
+              <button class="nav-button" onclick={prevLetter} aria-label="Previous letter">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="15 18 9 12 15 6"></polyline>
                 </svg>
-                Play Pronunciation
+              </button>
+              <div class="modal-content-inner">
+                <div class="video-placeholder">
+                  <div class="video-content">
+                    <div class="big-letter">{selectedLetter.letter}</div>
+                    <p class="video-text">{t('articulationDemo')}</p>
+                  </div>
+                </div>
+                
+                <div class="info-section">
+                  <div class="letter-info">
+                    <span class="info-label">{t('letterName')}:</span>
+                    <span class="info-value">{getLetterName(selectedLetter.audioFile)}</span>
+                  </div>
+                  
+                  <button onclick={playPronunciation} class="play-button">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                    {t('playPronunciation')}
+                  </button>
+                </div>
+              </div>
+              <button class="nav-button" onclick={nextLetter} aria-label="Next letter">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
               </button>
             </div>
           </div>
@@ -162,7 +236,7 @@
   </div>
   <div class="credits">
     <a href="https://dizayn-design.de/" target="_blank" rel="noopener noreferrer">
-      Credits to Dizayn Design
+      {t('credits')}
     </a>
   </div>
 </div>
@@ -185,12 +259,44 @@
     margin: 0 auto;
   }
 
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .language-switcher {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .lang-button {
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid #d97706;
+    background: transparent;
+    color: #92400e;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+  }
+
+  .lang-button:hover {
+    background: #fef3c7;
+  }
+
+  .lang-button.active {
+    background: #f59e0b;
+    color: white;
+  }
+
   .title-arabic {
     font-family: 'Amiri', serif;
     font-size: 2.25rem;
     font-weight: bold;
     text-align: center;
-    margin-bottom: 0.5rem;
+    margin: 0;
     color: #78350f;
   }
 
@@ -296,12 +402,6 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-  }
-
-  .header-letter {
-    font-family: 'Amiri', serif;
-    font-size: 3.75rem;
-    color: white;
   }
 
   .volume-icon {
@@ -433,5 +533,47 @@
 
   .credits a:hover {
     text-decoration: underline;
+  }
+
+  .nav-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .modal-content-inner {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .nav-button {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    border: 2px solid #d97706;
+    background: #fffbeb;
+    color: #d97706;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    padding: 0;
+  }
+
+  .nav-button:hover {
+    background: #f59e0b;
+    color: white;
+    border-color: #f59e0b;
+  }
+
+  .nav-button:hover {
+    background: #f59e0b;
+    color: white;
+  }
+
+  .nav-button:active {
+    transform: scale(0.9);
   }
 </style>
